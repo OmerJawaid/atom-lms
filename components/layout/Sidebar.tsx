@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard, User, Map, Brain, MessageSquare,
-  Users, TrendingUp, Settings, Zap, BookOpen, PlayCircle,
-  ClipboardList, HelpCircle, AlertTriangle, BarChart3, BookMarked
+  LayoutDashboard, User, Map, MessageSquare,
+  Users, Settings, Zap, BookOpen, PlayCircle,
+  ClipboardList, HelpCircle, AlertTriangle, BarChart3, BookMarked,
+  GraduationCap, Calendar, UserPlus, Sparkles,
+  FileText, Star, Activity, TrendingUp
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
@@ -30,7 +32,17 @@ const instructorNav = [
 ];
 
 const adminNav = [
-  { label: "Analytics", icon: TrendingUp, href: "/admin/dashboard" },
+  { label: "Dashboard", icon: LayoutDashboard, href: "/admin/dashboard" },
+  { label: "Programs", icon: BookMarked, href: "/admin/programs" },
+  { label: "Instructors", icon: GraduationCap, href: "/admin/instructors" },
+  { label: "Learners", icon: Users, href: "/admin/learners" },
+  { label: "Cohorts", icon: Calendar, href: "/admin/cohorts" },
+  { label: "Enrollments", icon: UserPlus, href: "/admin/enrollments" },
+  { label: "AI Insights", icon: Sparkles, href: "/admin/ai-insights" },
+  { label: "Reports", icon: FileText, href: "/admin/reports" },
+  { label: "Content Quality", icon: Star, href: "/admin/content-quality" },
+  { label: "Platform Health", icon: Activity, href: "/admin/platform-health" },
+  { label: "Settings", icon: Settings, href: "/admin/settings" },
 ];
 
 export function Sidebar() {

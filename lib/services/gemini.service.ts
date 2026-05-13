@@ -279,6 +279,72 @@ function generateFallbackQuestions(lectureTitle: string, count: number) {
   return templates.slice(0, count);
 }
 
+export async function generateAdminInsights(input: {
+  totalLearners: number;
+  averageCompletion: number;
+  averageQuizScore: number;
+  highRiskLearners: number;
+  mostRecommendedProgram: string;
+  mostDifficultTopic: string;
+  cohortPerformance: Array<{ name: string; averageCompletion: number; riskCount: number }>;
+  contentQualityIssues: Array<{ courseName?: string; issueType: string; qualityScore: number }>;
+}): Promise<{ summary: string; insights: Array<{ title: string; severity: "high" | "medium" | "low"; evidence: string; recommendedAction: string; expectedImpact: string }>; generatedAt: string; modelUsed: "gemini" | "fallback" }> {
+  const client = await getGeminiClient();
+  const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+
+  const fallback = {
+    summary: `Platform has ${input.totalLearners} learners with ${input.averageCompletion}% avg completion and ${input.averageQuizScore}% avg quiz score. ${input.highRiskLearners} learners are at high risk. ${input.mostDifficultTopic} is the primary weak topic requiring immediate remediation.`,
+    insights: [
+      { title: `${input.mostDifficultTopic} needs remediation`, severity: "high" as const, evidence: `${input.mostDifficultTopic} appears most frequently in failed quiz answers across multiple cohorts.`, recommendedAction: `Add a dedicated remedial lecture and 5 adaptive practice questions for ${input.mostDifficultTopic}.`, expectedImpact: "Reduces quiz failure rate by ~15% and decreases instructor intervention load." },
+      { title: `${input.highRiskLearners} high-risk learners need intervention`, severity: "high" as const, evidence: `${input.highRiskLearners} learners score below 50% on quizzes or have career readiness below 55.`, recommendedAction: "Send personalized study plans and schedule 1:1 sessions for all high-risk learners.", expectedImpact: "Expected to recover 40-60% of at-risk learners within 2 weeks." },
+      { title: `${input.mostRecommendedProgram} should receive content investment`, severity: "medium" as const, evidence: `${input.mostRecommendedProgram} is the most recommended program but has significant quality improvement opportunities.`, recommendedAction: "Prioritize content updates, add 2-3 new practical exercises, and attach quizzes to all lectures.", expectedImpact: "Increases completion rate by 10-15% and improves learner satisfaction." },
+      { title: "Content quality issues detected in multiple programs", severity: "medium" as const, evidence: `${input.contentQualityIssues.length} content quality issues identified, including high failure rates and low completion.`, recommendedAction: "Resolve all critical quality issues within 2 weeks. Start with SQL Foundations and Power BI Fundamentals.", expectedImpact: "Improves overall platform quality score and reduces dropout rates." },
+    ],
+    generatedAt: new Date().toISOString(),
+    modelUsed: "fallback" as const,
+  };
+
+  if (!client) return fallback;
+
+  const prompt = `You are an AI analytics advisor for atomcamp, an EdTech platform.
+
+Platform data:
+- Total learners: ${input.totalLearners}
+- Average completion: ${input.averageCompletion}%
+- Average quiz score: ${input.averageQuizScore}%
+- High-risk learners: ${input.highRiskLearners}
+- Most recommended program: ${input.mostRecommendedProgram}
+- Most difficult topic: ${input.mostDifficultTopic}
+- Active cohorts: ${input.cohortPerformance.length}
+- Content issues: ${input.contentQualityIssues.length}
+
+Generate a platform intelligence briefing. Return ONLY valid JSON (no markdown):
+{
+  "summary": "2-3 sentence executive summary",
+  "insights": [
+    {
+      "title": "string",
+      "severity": "high|medium|low",
+      "evidence": "specific data-backed evidence",
+      "recommendedAction": "concrete next step",
+      "expectedImpact": "measurable outcome"
+    }
+  ]
+}
+Generate exactly 4 insights. Be specific and data-driven.`;
+
+  try {
+    const response = await client.models.generateContent({ model, contents: prompt, config: { responseMimeType: "application/json" } });
+    const text: string = (response as unknown as { text?: string }).text ?? "";
+    if (!text) throw new Error("Empty response");
+    const parsed = JSON.parse(text);
+    return { ...parsed, generatedAt: new Date().toISOString(), modelUsed: "gemini" as const };
+  } catch (err) {
+    console.error("[gemini] generateAdminInsights error:", err);
+    return fallback;
+  }
+}
+
 export async function checkGeminiHealth(): Promise<boolean> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey === "demo_gemini_api_key_replace_with_real_value") return false;
