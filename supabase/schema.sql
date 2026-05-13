@@ -1,49 +1,128 @@
--- Atom Adaptive Intelligence Hub - Supabase Schema
--- Run this in your Supabase SQL editor
+-- Atom Adaptive Intelligence Hub - Complete Schema
+-- Run this in Supabase SQL Editor
 
--- 1. Students table
-CREATE TABLE IF NOT EXISTS students (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  email text UNIQUE,
+create extension if not exists "pgcrypto";
+
+-- ============================================================
+-- CORE TABLES
+-- ============================================================
+
+create table if not exists students (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  email text unique,
   input_text text,
   skill_level text,
   primary_goal text,
   learning_style text,
-  confidence_score int,
-  preferred_course text,
-  career_readiness_score int DEFAULT 0,
-  created_at timestamptz DEFAULT now()
+  confidence_score int default 0,
+  preferred_course_id uuid,
+  career_readiness_score int default 0,
+  created_at timestamptz default now()
 );
 
--- 2. Course recommendations
-CREATE TABLE IF NOT EXISTS course_recommendations (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_id uuid REFERENCES students(id) ON DELETE CASCADE,
+create table if not exists courses (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  slug text unique not null,
+  track text not null,
+  level text not null,
+  duration text,
+  description text,
+  thumbnail_url text,
+  is_published boolean default true,
+  created_at timestamptz default now()
+);
+
+create table if not exists lectures (
+  id uuid primary key default gen_random_uuid(),
+  course_id uuid references courses(id) on delete cascade,
+  title text not null,
+  slug text not null,
+  description text,
+  content text,
+  video_url text,
+  duration_minutes int default 20,
+  order_index int default 1,
+  lecture_type text default 'video',
+  is_published boolean default true,
+  created_at timestamptz default now()
+);
+
+create table if not exists quizzes (
+  id uuid primary key default gen_random_uuid(),
+  course_id uuid references courses(id) on delete cascade,
+  lecture_id uuid references lectures(id) on delete set null,
+  title text not null,
+  description text,
+  difficulty text default 'medium',
+  passing_score int default 60,
+  time_limit_minutes int default 15,
+  is_adaptive boolean default true,
+  is_published boolean default true,
+  created_at timestamptz default now()
+);
+
+create table if not exists questions (
+  id uuid primary key default gen_random_uuid(),
+  quiz_id uuid references quizzes(id) on delete cascade,
+  question_text text not null,
+  question_type text default 'mcq',
+  options jsonb not null,
+  correct_answer text not null,
+  explanation text,
+  difficulty text default 'medium',
+  topic text,
+  points int default 1,
+  order_index int default 1,
+  created_at timestamptz default now()
+);
+
+create table if not exists lecture_progress (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid references students(id) on delete cascade,
+  lecture_id uuid references lectures(id) on delete cascade,
+  course_id uuid references courses(id) on delete cascade,
+  status text default 'not_started',
+  progress_percent int default 0,
+  completed_at timestamptz,
+  created_at timestamptz default now(),
+  unique(student_id, lecture_id)
+);
+
+create table if not exists quiz_attempts (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid references students(id) on delete cascade,
+  quiz_id uuid references quizzes(id) on delete cascade,
+  lecture_id uuid references lectures(id) on delete set null,
+  answers jsonb not null default '[]',
+  score int default 0,
+  total_questions int default 0,
+  correct_count int default 0,
+  accuracy int default 0,
+  weighted_score int default 0,
+  next_difficulty text,
+  passed boolean default false,
+  ai_feedback text,
+  weak_topics jsonb default '[]',
+  started_at timestamptz default now(),
+  submitted_at timestamptz default now()
+);
+
+create table if not exists course_recommendations (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid references students(id) on delete cascade,
   course_api_id int,
   title text,
   description text,
   similarity_score int,
   rank int,
-  created_at timestamptz DEFAULT now()
+  created_at timestamptz default now()
 );
 
--- 3. Quiz attempts
-CREATE TABLE IF NOT EXISTS quiz_attempts (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_id uuid REFERENCES students(id) ON DELETE CASCADE,
-  history jsonb,
-  next_difficulty text,
-  accuracy int,
-  weighted_score int,
-  message text,
-  created_at timestamptz DEFAULT now()
-);
-
--- 4. Learning roadmaps
-CREATE TABLE IF NOT EXISTS learning_roadmaps (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_id uuid REFERENCES students(id) ON DELETE CASCADE,
+create table if not exists learning_roadmaps (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid references students(id) on delete cascade,
   roadmap_title text,
   summary text,
   next_best_lesson text,
@@ -53,35 +132,32 @@ CREATE TABLE IF NOT EXISTS learning_roadmaps (
   mentor_message text,
   instructor_note text,
   model_used text,
-  created_at timestamptz DEFAULT now()
+  created_at timestamptz default now()
 );
 
--- 5. Instructor insights
-CREATE TABLE IF NOT EXISTS instructor_insights (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_id uuid REFERENCES students(id) ON DELETE CASCADE,
-  risk_level text,
+create table if not exists instructor_interventions (
+  id uuid primary key default gen_random_uuid(),
+  student_id uuid references students(id) on delete cascade,
+  course_id uuid references courses(id) on delete cascade,
   weak_topic text,
+  risk_level text,
   recommended_action text,
-  created_at timestamptz DEFAULT now()
+  reason text,
+  timeline text,
+  status text default 'pending',
+  created_at timestamptz default now()
 );
 
--- 6. Admin metrics
-CREATE TABLE IF NOT EXISTS admin_metrics (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  metric_name text,
-  metric_value text,
-  created_at timestamptz DEFAULT now()
-);
+-- ============================================================
+-- INDEXES
+-- ============================================================
 
--- RLS Policies (optional, enable if using auth)
--- ALTER TABLE students ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE course_recommendations ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE quiz_attempts ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE learning_roadmaps ENABLE ROW LEVEL SECURITY;
-
--- Indexes for performance
-CREATE INDEX IF NOT EXISTS idx_course_recs_student ON course_recommendations(student_id);
-CREATE INDEX IF NOT EXISTS idx_quiz_student ON quiz_attempts(student_id);
-CREATE INDEX IF NOT EXISTS idx_roadmap_student ON learning_roadmaps(student_id);
-CREATE INDEX IF NOT EXISTS idx_insight_student ON instructor_insights(student_id);
+create index if not exists idx_lectures_course on lectures(course_id);
+create index if not exists idx_quizzes_course on quizzes(course_id);
+create index if not exists idx_quizzes_lecture on quizzes(lecture_id);
+create index if not exists idx_questions_quiz on questions(quiz_id);
+create index if not exists idx_progress_student on lecture_progress(student_id);
+create index if not exists idx_progress_lecture on lecture_progress(lecture_id);
+create index if not exists idx_attempts_student on quiz_attempts(student_id);
+create index if not exists idx_attempts_quiz on quiz_attempts(quiz_id);
+create index if not exists idx_interventions_student on instructor_interventions(student_id);

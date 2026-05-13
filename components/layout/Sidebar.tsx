@@ -4,20 +4,29 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, User, Map, Brain, MessageSquare,
-  Users, TrendingUp, Settings, Zap
+  Users, TrendingUp, Settings, Zap, BookOpen, PlayCircle,
+  ClipboardList, HelpCircle, AlertTriangle, BarChart3, BookMarked
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 const studentNav = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/student/dashboard" },
+  { label: "Course Catalog", icon: BookOpen, href: "/student/courses" },
   { label: "Onboarding", icon: User, href: "/student/onboarding" },
   { label: "My Roadmap", icon: Map, href: "/student/roadmap" },
-  { label: "Adaptive Quiz", icon: Brain, href: "/student/quiz" },
   { label: "AI Mentor", icon: MessageSquare, href: "/student/mentor" },
 ];
 
 const instructorNav = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/instructor/dashboard" },
+  { label: "Courses", icon: BookMarked, href: "/instructor/courses" },
+  { label: "Lectures", icon: PlayCircle, href: "/instructor/lectures" },
+  { label: "Quizzes", icon: ClipboardList, href: "/instructor/quizzes" },
+  { label: "Question Bank", icon: HelpCircle, href: "/instructor/questions" },
+  { label: "Students", icon: Users, href: "/instructor/students" },
+  { label: "Submissions", icon: BookOpen, href: "/instructor/submissions" },
+  { label: "Analytics", icon: BarChart3, href: "/instructor/analytics" },
+  { label: "Interventions", icon: AlertTriangle, href: "/instructor/interventions" },
 ];
 
 const adminNav = [
@@ -64,10 +73,10 @@ export function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-2">
+      <nav className="flex-1 px-3 py-2 overflow-y-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+          const isActive = pathname === item.href || (item.href !== "/student/courses" && pathname.startsWith(item.href + "/")) || (item.href === "/student/courses" && pathname === "/student/courses");
           return (
             <Link
               key={item.href}
@@ -79,7 +88,7 @@ export function Sidebar() {
                   : "text-gray-400 hover:text-white hover:bg-white/10"
               )}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-4 h-4 shrink-0" />
               {item.label}
             </Link>
           );

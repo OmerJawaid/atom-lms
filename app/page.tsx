@@ -176,15 +176,15 @@ export default function HomePage() {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-xl font-bold text-white mb-6">Explore All Dashboards</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link href="/student/dashboard" className="bg-white/10 hover:bg-white/20 rounded-xl p-5 border border-white/10 transition-all">
+            <Link href="/student/courses" className="bg-white/10 hover:bg-white/20 rounded-xl p-5 border border-white/10 transition-all">
               <GraduationCap className="w-8 h-8 text-[#B7FF4A] mx-auto mb-3" />
-              <h3 className="font-semibold text-white mb-1">Student View</h3>
-              <p className="text-gray-400 text-sm">Profile, roadmap, quiz, mentor</p>
+              <h3 className="font-semibold text-white mb-1">Course Catalog</h3>
+              <p className="text-gray-400 text-sm">5 courses, 27 lectures, adaptive quizzes</p>
             </Link>
             <Link href="/instructor/dashboard" className="bg-white/10 hover:bg-white/20 rounded-xl p-5 border border-white/10 transition-all">
               <BookOpen className="w-8 h-8 text-blue-400 mx-auto mb-3" />
-              <h3 className="font-semibold text-white mb-1">Instructor View</h3>
-              <p className="text-gray-400 text-sm">At-risk students, interventions</p>
+              <h3 className="font-semibold text-white mb-1">Instructor Workspace</h3>
+              <p className="text-gray-400 text-sm">Courses, quizzes, submissions, analytics</p>
             </Link>
             <Link href="/admin/dashboard" className="bg-white/10 hover:bg-white/20 rounded-xl p-5 border border-white/10 transition-all">
               <BarChart3 className="w-8 h-8 text-purple-400 mx-auto mb-3" />
